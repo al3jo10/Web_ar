@@ -11,10 +11,30 @@
         vr-mode-ui="enabled: fasle"
         device-orientation-permission-ui="enabled: false"
     >
+    <a-assets>
+    <video
+        id="Video"
+        src="./media/laura.webm"
+        loop
+        playsinline
+        webkit-playsinline
+    ></video>
+    </a-assets>
         <a-camera position=" 0 0 0" look-controls="enabled: false"></a-camera>
         <a-entity mindar-image-target="targetIndex: 0">
         <a-gltf-model rotation="0 0 0 " position="0 0 -0.5" scale="0.2 0.2 0.2" src="./model/CAPSULA.glb" animation="property: position; to: 0 0.1 0.1; dur: 10; easing: easeInOutQuad; loop: false; dir: alternate"></a-gltf-model>      
-
+        <a-plane
+            position="0 0 0"
+            rotation="0 0 0"
+            width="1"
+            height="1"
+            material="
+            src: ./media/laura.webm;
+            transparent: true;
+            shader: flat;
+            opacity: 1;
+            "
+        ></a-plane>
         </a-entity>
     </a-scene>
 </body>
