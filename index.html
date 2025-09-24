@@ -18,7 +18,7 @@
         id="Video"
         src="./media/laura2.webm"
         loop
-    
+        
         playsinline
         webkit-playsinline
     ></video>
@@ -37,7 +37,7 @@
             width="0.2"
             height="0.3"
             material="
-            src: ./media/laura2.webm;
+            src: #Video;
             transparent: true;
             shader: flat;
             opacity: 1;
@@ -45,6 +45,25 @@
         ></a-plane>
         </a-entity> 
     </a-scene>
+
+    <script>
+    const anchor = document.querySelector('[mindar-image-target]');
+    const videoEl = document.getElementById('Video');
+
+    anchor.addEventListener("targetFound", () => {
+        
+        videoEl.muted = false;   
+        videoEl.play().catch(err => {
+        console.warn("No se pudo reproducir automáticamente:", err);
+        });
+    });
+
+    anchor.addEventListener("targetLost", () => {
+        
+        videoEl.pause();
+        videoEl.currentTime = 0;
+    });
+    </script>
 </body>
 </html>
 
