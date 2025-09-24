@@ -86,7 +86,7 @@
             background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,.15);
         }
         .hud button.active { background: #00e0b8; }
-        /* opcional: ocultar la HUD hasta que el target aparezca */
+        /* opcional: ocultar la HUD hasta que detecte la imagen */
         .hud.hidden { display: none; }
     </style>
 
@@ -118,7 +118,7 @@
     <script>
     (() => {
     const hud = document.getElementById('hud');
-    const screen = document.getElementById('screen');          // pantalla del video
+    const screen = document.getElementById('screen');        //pantalla (el plano que muestra el video)  
     const anchor = document.querySelector('[mindar-image-target]');
 
     // videos existentes
@@ -157,6 +157,8 @@
 
         // feedback visual del botón activo
         [b1,b2,b3].forEach(b => b.classList.toggle('active', b===whichBtn));
+
+         vid.currentTime = 0;
 
         // si el target está visible, intenta con audio; si no, lo dejamos “caliente”
         if (targetVisible) playWithAudio(vid); else warmup(vid);
