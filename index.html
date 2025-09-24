@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+<head> 
     
-    <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+    <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script> 
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 </head>
 <body>
@@ -16,7 +16,7 @@
     <a-assets>
     <video
         id="Video"
-        src="./media/laura2.webm"
+        src="./media/Laura-final.webm"
         loop
         
         playsinline
@@ -25,7 +25,7 @@
 
     <video
         id="Video2"
-        src="./media/mi_video_transparente.webm"
+        src="./media/Lizeth-final.webm"
         loop
         
         playsinline
@@ -34,7 +34,16 @@
 
     <video
         id="Video3"
-        src="./media/laura.webm"
+        src="./media/Laura-final.webm"
+        loop
+        
+        playsinline
+        webkit-playsinline
+    ></video>
+
+    <video
+        id="Video4"
+        src="./media/Lizeth-final.webm"
         loop
         
         playsinline
@@ -52,7 +61,7 @@
         <a-plane id="screen"
             position="0 0.05 0.35"
             rotation="90 0 0"
-            width="0.2"
+            width="0.25"
             height="0.3"
             material="
             src: #Video;
@@ -94,6 +103,7 @@
     <button id="b1" class="active">Video 1</button>
     <button id="b2">Video 2</button>
     <button id="b3">Video 3</button>
+    <button id="b4">Video 4</button>
     </div>
 
     <script>
@@ -125,12 +135,14 @@
     const v1 = document.getElementById('Video');
     const v2 = document.getElementById('Video2');
     const v3 = document.getElementById('Video3');
-    const videos = [v1, v2, v3];
+    const v4 = document.getElementById('Video4');
+    const videos = [v1, v2, v3, v4];
 
     // botones HUD
     const b1 = document.getElementById('b1');
     const b2 = document.getElementById('b2');
     const b3 = document.getElementById('b3');
+    const b4 = document.getElementById('b4');
 
     let targetVisible = false;
     let current = v1; // coincide con tu material inicial (#Video)
@@ -180,6 +192,7 @@
         b1.addEventListener(ev, ()=> setVideo(v1, b1), {passive:true});
         b2.addEventListener(ev, ()=> setVideo(v2, b2), {passive:true});
         b3.addEventListener(ev, ()=> setVideo(v3, b3), {passive:true});
+        b4.addEventListener(ev, ()=> setVideo(v4, b4), {passive:true});
     });
 
     // mostrar/ocultar HUD según el target
