@@ -1,88 +1,80 @@
 <!DOCTYPE html>
 <html lang="en">
 <head> 
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
     <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script> 
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-</head>
-<body>
-    <a-scene
-        mindar-image="imageTargetSrc:./img/targets.mind"
-        color-space="sRGB"
-        renderer="colorManagement: true, physicallyCorrectLights"
-        vr-mode-ui="enabled: false"
-        device-orientation-permission-ui="enabled: true"
-    >
-    <a-assets>
-    <video
-        id="Video"
-        src="./media/Laura-final.webm"
-        loop
-        
-        playsinline
-        webkit-playsinline
-    ></video>
 
-    <video
-        id="Video2"
-        src="./media/Lizeth-final.webm"
-        loop
-        
-        playsinline
-        webkit-playsinline
-    ></video>
+    <script>
+        AFRAME.registerComponent('chroma-key', {
+            schema: {
+                src: {type: 'selector'},
+                color: {type: 'color', default: '#00ff00'}, // Verde puro por defecto
+                threshold: {type: 'number', default: 0.4}   // Umbral de tolerancia
+            },
+            init: function () {
+                this.applyMaterial();
+                this.el.addEventListener('model-loaded', () => this.applyMaterial());
+            },
+            applyMaterial: function() {
+                const videoEl = this.data.src;
+                if (!videoEl || !this.el.getObject3D('mesh')) return;
 
-    <video
-        id="Video3"
-        src="./media/Valeria-final.webm"
-        loop
-        
-        playsinline
-        webkit-playsinline
-    ></video>
+                // Forzamos a que lea el color correcto del video
+                const texture = new THREE.VideoTexture(videoEl);
+                texture.colorSpace = THREE.SRGBColorSpace; 
+                
+                this.material = new THREE.ShaderMaterial({
+                    uniforms: {
+                        tex: { value: texture },
+                        keyColor: { value: new THREE.Color(this.data.color) },
+                        threshold: { value: this.data.threshold }
+                    },
+                    vertexShader: `
+                        varying vec2 vUv;
+                        void main() {
+                            vUv = uv;
+                            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                        }
+                    `,
+                    fragmentShader: `
+                        uniform sampler2D tex;
+                        uniform vec3 keyColor;
+                        uniform float threshold;
+                        varying vec2 vUv;
+                        void main() {
+                            vec4 fColor = texture2D(tex, vUv);
+                            // Calculamos la diferencia de color
+                            float diff = length(fColor.rgb - keyColor);
+                            if (diff < threshold) {
+                                discard; // Borra el pixel si es verde
+                            } else {
+                                gl_FragColor = fColor; // Muestra el pixel normal
+                            }
+                        }
+                    `,
+                    transparent: true, // FORZAMOS LA TRANSPARENCIA
+                    side: THREE.DoubleSide
+                });
 
-    <video
-        id="Video4"
-        src="./media/Alejandra-final.webm"
-        loop
-        
-        playsinline
-        webkit-playsinline
-    ></video>
-
-    </a-assets>
-        <a-camera position=" 0 0 0" look-controls="enabled: false" cursor="fuse:false; rayOrigin: mouse" raycaster="objects: .btn; near: 0.01; far: 20"></a-camera>
-        <a-entity mindar-image-target="targetIndex: 0">
-        <a-gltf-model rotation="90 0 0 " position="0 0 0.5" scale="0.3 0.3 0.3" src="./model/CAPSULA.glb" animation="property: position; to: 0 0.1 0.1; dur: 1500; easing: easeInOutQuad; loop: false; dir: alternate">
-
-
-
-        </a-gltf-model>      
-        <a-plane id="screen"
-            position="0 0.05 0.42"
-            rotation="90 0 0"
-            width="0.45"
-            height="0.5"
-            material="
-            src: #Video;
-            transparent: true;
-            shader: flat;
-            opacity: 1;
-            "
-        ></a-plane>
-
-
-  
-
-
-        </a-entity> 
-    </a-scene>
-
-
-
-
-
-
+                this.el.getObject3D('mesh').material = this.material;
+            },
+            update: function (oldData) {
+                if (!this.material) return;
+                
+                // Si cambiamos de video (con los botones) actualizamos la textura
+                if (this.data.src !== oldData.src) {
+                    const newTexture = new THREE.VideoTexture(this.data.src);
+                    newTexture.colorSpace = THREE.SRGBColorSpace;
+                    this.material.uniforms.tex.value = newTexture;
+                }
+                this.material.uniforms.keyColor.value.set(this.data.color);
+                this.material.uniforms.threshold.value = this.data.threshold;
+            }
+        });
+    </script>
 
     <style>
         .hud {
@@ -92,134 +84,126 @@
         .hud button {
             padding: 10px 14px; border: 0; border-radius: 10px;
             font: 600 14px system-ui, sans-serif; color: #111;
-            background: #FC9527FF; box-shadow: 0 4px 12px rgba(0,0,0,.15);
+            background: #FC9527; box-shadow: 0 4px 12px rgba(0,0,0,.15);
+            cursor: pointer;
         }
-        .hud button.active { background: #5B6642FF; }
-        /* opcional: ocultar la HUD hasta que detecte la imagen */
+        .hud button.active { background: #5B6642; color: white; }
         .hud.hidden { display: none; }
     </style>
+</head>
+<body>
+    <a-scene
+        mindar-image="imageTargetSrc: ./img/targets.mind"
+        color-space="sRGB"
+        renderer="colorManagement: true, physicallyCorrectLights"
+        vr-mode-ui="enabled: false"
+        device-orientation-permission-ui="enabled: true"
+    >
+        <a-assets>
+            <video id="Video" src="./media/Steam_480.mp4" loop playsinline webkit-playsinline crossorigin="anonymous"></video>
+            <video id="Video2" src="./media/Lizeth-final.webm" loop playsinline webkit-playsinline crossorigin="anonymous"></video>
+            <video id="Video3" src="./media/Valeria-final.webm" loop playsinline webkit-playsinline crossorigin="anonymous"></video>
+            <video id="Video4" src="./media/Alejandra-final.webm" loop playsinline webkit-playsinline crossorigin="anonymous"></video>
+        </a-assets>
+
+        <a-camera position="0 0 0" look-controls="enabled: false" cursor="fuse:false; rayOrigin: mouse" raycaster="objects: .btn; near: 0.01; far: 20"></a-camera>
+        
+        <a-entity mindar-image-target="targetIndex: 0">
+                
+            
+            <a-plane id="screen"
+                position="0 0.05 0.42"
+                rotation="0 0 0"
+                width="0.45"
+                height="0.8"
+                chroma-key="src: #Video; color: #00ff00; threshold: 0.45">
+            </a-plane>
+        </a-entity> 
+    </a-scene>
 
     <div id="hud" class="hud hidden">
-    <button id="b1" class="active">Video 1</button>
-    <button id="b2">Video 2</button>
-    <button id="b3">Video 3</button>
-    <button id="b4">Video 4</button>
+        <button id="b1" class="active">Video 1</button>
+        <button id="b2">Video 2</button>
+        <button id="b3">Video 3</button>
+        <button id="b4">Video 4</button>
     </div>
 
     <script>
-    const anchor = document.querySelector('[mindar-image-target]');
-    const videoEl = document.getElementById('Video');
+        (() => {
+            const hud = document.getElementById('hud');
+            const screen = document.getElementById('screen');          
+            const anchor = document.querySelector('[mindar-image-target]');
 
-    anchor.addEventListener("targetFound", () => {
-        
-        videoEl.muted = false;   
-        videoEl.play().catch(err => {
-        console.warn("No se pudo reproducir automáticamente:", err);
-        });
-    });
+            const v1 = document.getElementById('Video');
+            const v2 = document.getElementById('Video2');
+            const v3 = document.getElementById('Video3');
+            const v4 = document.getElementById('Video4');
+            const videos = [v1, v2, v3, v4];
 
-    anchor.addEventListener("targetLost", () => {
-        
-        videoEl.pause();
-        videoEl.currentTime = 0;
-    });
+            const b1 = document.getElementById('b1');
+            const b2 = document.getElementById('b2');
+            const b3 = document.getElementById('b3');
+            const b4 = document.getElementById('b4');
+
+            let targetVisible = false;
+            let current = v1; 
+
+            const warmup = v => { v.muted = true; v.play().catch(()=>{}); };
+            const pauseAll = () => videos.forEach(v => { try{v.pause();}catch{} });
+            const muteAll  = () => videos.forEach(v => v.muted = true);
+
+            document.querySelector('a-scene').addEventListener('loaded', () => {
+                videos.forEach(warmup);
+            });
+
+            const setVideo = (vid, whichBtn) => {
+                if (current === vid) return;
+                try { current.pause(); } catch {}
+                current = vid;
+                
+                // 3. ACTUALIZAMOS EL ATRIBUTO CORRECTO CUANDO CAMBIA EL VIDEO
+                screen.setAttribute('chroma-key', 'src', `#${vid.id}`);
+
+                [b1,b2,b3,b4].forEach(b => b.classList.toggle('active', b===whichBtn));
+                vid.currentTime = 0;
+
+                if (targetVisible) playWithAudio(vid); else warmup(vid);
+            };
+
+            const playWithAudio = async (vid) => {
+                muteAll();
+                vid.muted = false;
+                try { await vid.play(); }
+                catch {
+                    const unlock = () => { vid.muted = false; vid.play().catch(()=>{}); window.removeEventListener('pointerdown', unlock); };
+                    window.addEventListener('pointerdown', unlock, { once:true });
+                }
+            };
+
+            ['click','touchstart'].forEach(ev=>{
+                b1.addEventListener(ev, ()=> setVideo(v1, b1), {passive:true});
+                b2.addEventListener(ev, ()=> setVideo(v2, b2), {passive:true});
+                b3.addEventListener(ev, ()=> setVideo(v3, b3), {passive:true});
+                b4.addEventListener(ev, ()=> setVideo(v4, b4), {passive:true});
+            });
+
+            anchor.addEventListener('targetFound', () => {
+                targetVisible = true;
+                hud.classList.remove('hidden');
+                playWithAudio(current);
+            });
+
+            anchor.addEventListener("targetLost", () => {
+                targetVisible = false;
+                hud.classList.add('hidden');
+                current.pause();
+                current.currentTime = 0;
+            });
+
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) { pauseAll(); muteAll(); }
+            });
+        })();
     </script>
-
-    <script>
-    (() => {
-    const hud = document.getElementById('hud');
-    const screen = document.getElementById('screen');        //pantalla (el plano que muestra el video)  
-    const anchor = document.querySelector('[mindar-image-target]');
-
-    // videos existentes
-    const v1 = document.getElementById('Video');
-    const v2 = document.getElementById('Video2');
-    const v3 = document.getElementById('Video3');
-    const v4 = document.getElementById('Video4');
-    const videos = [v1, v2, v3, v4];
-
-    // botones HUD
-    const b1 = document.getElementById('b1');
-    const b2 = document.getElementById('b2');
-    const b3 = document.getElementById('b3');
-    const b4 = document.getElementById('b4');
-
-    let targetVisible = false;
-    let current = v1; // coincide con tu material inicial (#Video)
-
-    // precalentar videos (silencio) para cambios instantáneos
-    const warmup = v => { v.muted = true; v.play().catch(()=>{}); };
-    const pauseAll = () => videos.forEach(v => { try{v.pause();}catch{} });
-    const muteAll  = () => videos.forEach(v => v.muted = true);
-
-    // al cargar la escena intenta precargar
-    document.querySelector('a-scene').addEventListener('loaded', () => {
-        videos.forEach(v => {
-        v.setAttribute('playsinline',''); v.setAttribute('webkit-playsinline','');
-        warmup(v);
-        });
-    });
-
-    // cambio de video (boton HUD)
-    const setVideo = (vid, whichBtn) => {
-        if (current === vid) return;
-        try { current.pause(); } catch {}
-        current = vid;
-        screen.setAttribute('material', 'src', `#${vid.id}`);
-
-        // feedback visual del botón activo
-        [b1,b2,b3,b4].forEach(b => b.classList.toggle('active', b===whichBtn));
-
-         vid.currentTime = 0;
-
-        // si el target está visible, intenta con audio; si no, lo dejamos “caliente”
-        if (targetVisible) playWithAudio(vid); else warmup(vid);
-    };
-
-    const playWithAudio = async (vid) => {
-        muteAll();
-        vid.muted = false;
-        try { await vid.play(); }
-        catch {
-        // si el navegador exige interacción para audio
-        const unlock = () => { vid.muted = false; vid.play().catch(()=>{}); window.removeEventListener('pointerdown', unlock); };
-        window.addEventListener('pointerdown', unlock, { once:true });
-        }
-    };
-
-    // eventos de los botones (click/touch)
-    ['click','touchstart'].forEach(ev=>{
-        b1.addEventListener(ev, ()=> setVideo(v1, b1), {passive:true});
-        b2.addEventListener(ev, ()=> setVideo(v2, b2), {passive:true});
-        b3.addEventListener(ev, ()=> setVideo(v3, b3), {passive:true});
-        b4.addEventListener(ev, ()=> setVideo(v4, b4), {passive:true});
-    });
-
-    // mostrar/ocultar HUD según el target
-    anchor.addEventListener('targetFound', () => {
-        targetVisible = true;
-        hud.classList.remove('hidden');
-        playWithAudio(current);
-    });
-    anchor.addEventListener('targetLost', () => {
-        targetVisible = false;
-        hud.classList.add('hidden');
-        pauseAll(); muteAll();
-        videos.forEach(v => v.currentTime = 0);
-    });
-
-    // si cambias de pestaña: pausar/silenciar
-    document.addEventListener('visibilitychange', () => {
-        if (document.hidden) { pauseAll(); muteAll(); }
-    });
-    })();
-    </script>
-
 </body>
 </html>
-
-
-
-
-
-
